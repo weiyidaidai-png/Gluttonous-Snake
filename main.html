@@ -35,12 +35,23 @@
             margin: 0 auto;
         }
 
-        #score-display {
+        #score-board {
             color: #fff;
             font-size: 1.5rem;
             text-align: center;
             margin: 20px 0;
             font-weight: bold;
+            display: flex;
+            justify-content: space-around;
+            width: 400px;
+        }
+
+        #current-score {
+            color: #4CAF50;
+        }
+
+        #highest-score {
+            color: #FFD700;
         }
 
         #game-over {
@@ -74,6 +85,13 @@
         #final-score {
             color: #fff;
             font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        #final-highest {
+            color: #FFD700;
+            font-size: 1.8rem;
             margin-bottom: 30px;
             text-align: center;
         }
@@ -104,15 +122,19 @@
 </head>
 <body>
     <h1>🐍 贪吃蛇小游戏</h1>
+    <div id="score-board">
+        <div id="current-score">当前分数: 0</div>
+        <div id="highest-score">历史最高分: 0</div>
+    </div>
     <div id="game-container">
         <canvas id="game-board" width="400" height="400"></canvas>
         <div id="game-over">
             <h2>游戏结束</h2>
-            <div id="final-score">最终得分: 0</div>
+            <div id="final-score">本局得分: 0</div>
+            <div id="final-highest">历史最高分: 0</div>
             <button id="restart-btn">重新开始</button>
         </div>
     </div>
-    <div id="score-display">得分: 0</div>
     <div id="controls">
         使用方向键控制蛇的移动<br>
         吃到食物增加得分和蛇的长度<br>
@@ -122,9 +144,11 @@
     <script>
         const canvas = document.getElementById('game-board');
         const ctx = canvas.getContext('2d');
-        const scoreDisplay = document.getElementById('score-display');
+        const currentScoreDisplay = document.getElementById('current-score');
+        const highestScoreDisplay = document.getElementById('highest-score');
         const gameOverScreen = document.getElementById('game-over');
         const finalScoreDisplay = document.getElementById('final-score');
+        const finalHighestDisplay = document.getElementById('final-highest');
         const restartBtn = document.getElementById('restart-btn');
 
         const gridSize = 20;
@@ -137,7 +161,11 @@
         let dx = 0;
         let dy = 0;
         let score = 0;
+        let highestScore = localStorage.getItem('snakeHighestScore') ? parseInt(localStorage.getItem('snakeHighestScore')) : 0;
         let gameLoop = null;
+
+        // 初始化最高分显示
+        highestScoreDisplay.textContent = '历史最高分: ' + highestScore;
 
         function drawGame() {
             clearCanvas();
@@ -158,11 +186,10 @@
 
         function drawSnake() {
             snake.forEach((segment, index) => {
-                // 为蛇头和身体设置不同的颜色
                 if (index === 0) {
-                    ctx.fillStyle = '#4CAF50'; // 蛇头绿色
+                    ctx.fillStyle = '#4CAF50';
                 } else {
-                    ctx.fillStyle = '#8BC34A'; // 蛇身浅绿色
+                    ctx.fillStyle = '#8BC34A';
                 }
                 ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
                 ctx.strokeStyle = '#2E7D32';
@@ -183,12 +210,11 @@
             const head = { x: snake[0].x + dx, y: snake[0].y + dy };
             snake.unshift(head);
 
-            // 如果没有吃到食物，移除尾部
             if (head.x !== food.x || head.y !== food.y) {
                 snake.pop();
             } else {
                 score += 10;
-                scoreDisplay.textContent = '得分: ' + score;
+                currentScoreDisplay.textContent = '当前分数: ' + score;
                 generateFood();
             }
         }
@@ -196,12 +222,10 @@
         function checkCollision() {
             const head = snake[0];
 
-            // 检查墙碰撞
             if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
                 return true;
             }
 
-            // 检查自身碰撞
             for (let i = 1; i < snake.length; i++) {
                 if (head.x === snake[i].x && head.y === snake[i].y) {
                     return true;
@@ -217,7 +241,6 @@
         }
 
         function generateFood() {
-            // 生成随机位置，确保不会出现在蛇身上
             let newFood;
             do {
                 newFood = {
@@ -241,7 +264,6 @@
             const goingRight = dx === 1;
             const goingLeft = dx === -1;
 
-            // 防止蛇反向移动
             if (keyPressed === LEFT_KEY && !goingRight) {
                 dx = -1;
                 dy = 0;
@@ -262,7 +284,16 @@
 
         function gameOver() {
             clearInterval(gameLoop);
-            finalScoreDisplay.textContent = '最终得分: ' + score;
+
+            // 更新最高分
+            if (score > highestScore) {
+                highestScore = score;
+                localStorage.setItem('snakeHighestScore', highestScore);
+                highestScoreDisplay.textContent = '历史最高分: ' + highestScore;
+            }
+
+            finalScoreDisplay.textContent = '本局得分: ' + score;
+            finalHighestDisplay.textContent = '历史最高分: ' + highestScore;
             gameOverScreen.classList.add('show');
         }
 
@@ -271,19 +302,16 @@
             dx = 0;
             dy = 0;
             score = 0;
-            scoreDisplay.textContent = '得分: 0';
+            currentScoreDisplay.textContent = '当前分数: 0';
             generateFood();
             gameOverScreen.classList.remove('show');
 
-            // 重新开始游戏循环
             gameLoop = setInterval(drawGame, 150);
         }
 
-        // 事件监听
         document.addEventListener('keydown', changeDirection);
         restartBtn.addEventListener('click', restart);
 
-        // 初始化游戏
         gameLoop = setInterval(drawGame, 150);
     </script>
 </body>
