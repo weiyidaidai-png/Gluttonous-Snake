@@ -35,12 +35,23 @@
             margin: 0 auto;
         }
 
-        #score-display {
+        #score-board {
             color: #fff;
             font-size: 1.5rem;
             text-align: center;
             margin: 20px 0;
             font-weight: bold;
+            display: flex;
+            justify-content: space-around;
+            width: 400px;
+        }
+
+        #current-score {
+            color: #4CAF50;
+        }
+
+        #highest-score {
+            color: #FFD700;
         }
 
         #game-over {
@@ -74,6 +85,13 @@
         #final-score {
             color: #fff;
             font-size: 1.8rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        #final-highest {
+            color: #FFD700;
+            font-size: 1.8rem;
             margin-bottom: 30px;
             text-align: center;
         }
@@ -100,32 +118,218 @@
             margin-top: 20px;
             line-height: 1.6;
         }
+
+        #settings-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        #settings-btn:hover {
+            background-color: #45a049;
+        }
+
+        #settings-panel {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        #settings-panel.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        #settings-panel h2 {
+            color: #fff;
+            font-size: 2rem;
+            margin-bottom: 30px;
+        }
+
+        .control-setting {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            color: #fff;
+            font-size: 1.2rem;
+        }
+
+        .control-setting label {
+            width: 120px;
+            text-align: right;
+            margin-right: 20px;
+        }
+
+        .control-setting input {
+            background-color: #333;
+            color: #fff;
+            border: 2px solid #4a90d9;
+            padding: 10px;
+            font-size: 1rem;
+            border-radius: 5px;
+            width: 100px;
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.3s ease;
+        }
+
+        .control-setting input:focus {
+            outline: none;
+            border-color: #4CAF50;
+        }
+
+        #save-btn, #cancel-btn {
+            background-color: #4a90d9;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        #save-btn:hover, #cancel-btn:hover {
+            background-color: #357abd;
+        }
+
+        #save-btn {
+            background-color: #4CAF50;
+        }
+
+        #save-btn:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
     <h1>🐍 贪吃蛇小游戏</h1>
+    <div id="score-board">
+        <div id="current-score">当前分数: 0</div>
+        <div id="highest-score">历史最高分: 0</div>
+    </div>
     <div id="game-container">
         <canvas id="game-board" width="400" height="400"></canvas>
         <div id="game-over">
             <h2>游戏结束</h2>
-            <div id="final-score">最终得分: 0</div>
+            <div id="final-score">本局得分: 0</div>
+            <div id="final-highest">历史最高分: 0</div>
             <button id="restart-btn">重新开始</button>
         </div>
     </div>
-    <div id="score-display">得分: 0</div>
+    <button id="settings-btn">设置</button>
     <div id="controls">
         使用方向键控制蛇的移动<br>
         吃到食物增加得分和蛇的长度<br>
         撞到墙或自己的身体游戏结束
     </div>
 
+    <div id="settings-panel">
+        <h2>游戏设置</h2>
+        <div class="control-setting">
+            <label>上</label>
+            <input type="text" id="up-key" maxlength="1">
+        </div>
+        <div class="control-setting">
+            <label>下</label>
+            <input type="text" id="down-key" maxlength="1">
+        </div>
+        <div class="control-setting">
+            <label>左</label>
+            <input type="text" id="left-key" maxlength="1">
+        </div>
+        <div class="control-setting">
+            <label>右</label>
+            <input type="text" id="right-key" maxlength="1">
+        </div>
+        <div class="control-setting">
+            <label>墙体模式</label>
+            <select id="wall-mode-select">
+                <option value="classic">经典模式（撞墙死亡）</option>
+                <option value="wall">穿墙模式（无边界）</option>
+            </select>
+        </div>
+        <div class="control-setting">
+            <label>游戏难度</label>
+            <select id="difficulty-select">
+                <option value="simple">简单</option>
+                <option value="normal">普通</option>
+                <option value="hard">困难</option>
+            </select>
+        </div>
+        <div>
+            <button id="save-btn">保存设置</button>
+            <button id="cancel-btn">取消</button>
+        </div>
+    </div>
+
     <script>
         const canvas = document.getElementById('game-board');
         const ctx = canvas.getContext('2d');
-        const scoreDisplay = document.getElementById('score-display');
+        const currentScoreDisplay = document.getElementById('current-score');
+        const highestScoreDisplay = document.getElementById('highest-score');
         const gameOverScreen = document.getElementById('game-over');
         const finalScoreDisplay = document.getElementById('final-score');
+        const finalHighestDisplay = document.getElementById('final-highest');
         const restartBtn = document.getElementById('restart-btn');
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsPanel = document.getElementById('settings-panel');
+        const saveBtn = document.getElementById('save-btn');
+        const cancelBtn = document.getElementById('cancel-btn');
+        const upKeyInput = document.getElementById('up-key');
+        const downKeyInput = document.getElementById('down-key');
+        const leftKeyInput = document.getElementById('left-key');
+        const rightKeyInput = document.getElementById('right-key');
+        const wallModeSelect = document.getElementById('wall-mode-select');
+        const difficultySelect = document.getElementById('difficulty-select');
+
+        // 默认键位设置
+        const DEFAULT_KEYS = {
+            up: 'W',
+            down: 'S',
+            left: 'A',
+            right: 'D'
+        };
+
+        // 默认墙体模式设置
+        const DEFAULT_WALL_MODE = 'classic'; // classic: 撞墙死亡,穿墙模式wall: 穿墙模式
+
+        // 默认难度设置
+        const DEFAULT_DIFFICULTY = 'normal'; // simple: 简单, normal: 普通, hard: 困难
+
+        // 难度与速度对应关系
+        const DIFFICULTY_SPEED = {
+            simple: 200,   // 简单模式：较慢速度
+            normal: 150,   // 普通模式：默认速度
+            hard: 100      // 困难模式：较快速度
+        };
+
+        // 加载保存的键位设置
+        let keys = JSON.parse(localStorage.getItem('snakeKeys')) || DEFAULT_KEYS;
+
+        // 加载保存的墙体模式设置
+        let wallMode = localStorage.getItem('snakeWallMode') || DEFAULT_WALL_MODE;
+
+        // 加载保存的难度设置
+        let difficulty = localStorage.getItem('snakeDifficulty') || DEFAULT_DIFFICULTY;
 
         const gridSize = 20;
         const tileCount = canvas.width / gridSize;
@@ -137,7 +341,11 @@
         let dx = 0;
         let dy = 0;
         let score = 0;
+        let highestScore = localStorage.getItem('snakeHighestScore') ? parseInt(localStorage.getItem('snakeHighestScore')) : 0;
         let gameLoop = null;
+
+        // 初始化最高分显示
+        highestScoreDisplay.textContent = '历史最高分: ' + highestScore;
 
         function drawGame() {
             clearCanvas();
@@ -158,11 +366,10 @@
 
         function drawSnake() {
             snake.forEach((segment, index) => {
-                // 为蛇头和身体设置不同的颜色
                 if (index === 0) {
-                    ctx.fillStyle = '#4CAF50'; // 蛇头绿色
+                    ctx.fillStyle = '#4CAF50';
                 } else {
-                    ctx.fillStyle = '#8BC34A'; // 蛇身浅绿色
+                    ctx.fillStyle = '#8BC34A';
                 }
                 ctx.fillRect(segment.x * gridSize, segment.y * gridSize, gridSize - 2, gridSize - 2);
                 ctx.strokeStyle = '#2E7D32';
@@ -180,15 +387,23 @@
         function moveSnake() {
             if (dx === 0 && dy === 0) return;
 
-            const head = { x: snake[0].x + dx, y: snake[0].y + dy };
+            let head = { x: snake[0].x + dx, y: snake[0].y + dy };
+
+            // 穿墙模式处理
+            if (wallMode === 'wall') {
+                if (head.x < 0) head.x = tileCount - 1;
+                else if (head.x >= tileCount) head.x = 0;
+                if (head.y < 0) head.y = tileCount - 1;
+                else if (head.y >= tileCount) head.y = 0;
+            }
+
             snake.unshift(head);
 
-            // 如果没有吃到食物，移除尾部
             if (head.x !== food.x || head.y !== food.y) {
                 snake.pop();
             } else {
                 score += 10;
-                scoreDisplay.textContent = '得分: ' + score;
+                currentScoreDisplay.textContent = '当前分数: ' + score;
                 generateFood();
             }
         }
@@ -196,12 +411,10 @@
         function checkCollision() {
             const head = snake[0];
 
-            // 检查墙碰撞
             if (head.x < 0 || head.x >= tileCount || head.y < 0 || head.y >= tileCount) {
                 return true;
             }
 
-            // 检查自身碰撞
             for (let i = 1; i < snake.length; i++) {
                 if (head.x === snake[i].x && head.y === snake[i].y) {
                     return true;
@@ -217,7 +430,6 @@
         }
 
         function generateFood() {
-            // 生成随机位置，确保不会出现在蛇身上
             let newFood;
             do {
                 newFood = {
@@ -230,31 +442,25 @@
         }
 
         function changeDirection(event) {
-            const LEFT_KEY = 37;
-            const RIGHT_KEY = 39;
-            const UP_KEY = 38;
-            const DOWN_KEY = 40;
-
-            const keyPressed = event.keyCode;
+            const keyPressed = event.key.toUpperCase();
             const goingUp = dy === -1;
             const goingDown = dy === 1;
             const goingRight = dx === 1;
             const goingLeft = dx === -1;
 
-            // 防止蛇反向移动
-            if (keyPressed === LEFT_KEY && !goingRight) {
+            if (keyPressed === keys.left && !goingRight) {
                 dx = -1;
                 dy = 0;
             }
-            if (keyPressed === UP_KEY && !goingDown) {
+            if (keyPressed === keys.up && !goingDown) {
                 dx = 0;
                 dy = -1;
             }
-            if (keyPressed === RIGHT_KEY && !goingLeft) {
+            if (keyPressed === keys.right && !goingLeft) {
                 dx = 1;
                 dy = 0;
             }
-            if (keyPressed === DOWN_KEY && !goingUp) {
+            if (keyPressed === keys.down && !goingUp) {
                 dx = 0;
                 dy = 1;
             }
@@ -262,7 +468,16 @@
 
         function gameOver() {
             clearInterval(gameLoop);
-            finalScoreDisplay.textContent = '最终得分: ' + score;
+
+            // 更新最高分
+            if (score > highestScore) {
+                highestScore = score;
+                localStorage.setItem('snakeHighestScore', highestScore);
+                highestScoreDisplay.textContent = '历史最高分: ' + highestScore;
+            }
+
+            finalScoreDisplay.textContent = '本局得分: ' + score;
+            finalHighestDisplay.textContent = '历史最高分: ' + highestScore;
             gameOverScreen.classList.add('show');
         }
 
@@ -271,20 +486,86 @@
             dx = 0;
             dy = 0;
             score = 0;
-            scoreDisplay.textContent = '得分: 0';
+            currentScoreDisplay.textContent = '当前分数: 0';
             generateFood();
             gameOverScreen.classList.remove('show');
 
-            // 重新开始游戏循环
-            gameLoop = setInterval(drawGame, 150);
+            clearInterval(gameLoop);
+            gameLoop = setInterval(drawGame, DIFFICULTY_SPEED[difficulty]);
         }
 
-        // 事件监听
+        // 设置面板交互
+        settingsBtn.addEventListener('click', () => {
+            // 显示当前键位设置
+            upKeyInput.value = keys.up;
+            downKeyInput.value = keys.down;
+            leftKeyInput.value = keys.left;
+            rightKeyInput.value = keys.right;
+            // 显示当前墙体模式设置
+            wallModeSelect.value = wallMode;
+            // 显示当前难度设置
+            difficultySelect.value = difficulty;
+            settingsPanel.classList.add('show');
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            settingsPanel.classList.remove('show');
+        });
+
+        saveBtn.addEventListener('click', () => {
+            const newKeys = {
+                up: upKeyInput.value.toUpperCase(),
+                down: downKeyInput.value.toUpperCase(),
+                left: leftKeyInput.value.toUpperCase(),
+                right: rightKeyInput.value.toUpperCase()
+            };
+
+            // 检查是否有重复键位
+            const keyValues = Object.values(newKeys);
+            const uniqueKeys = new Set(keyValues);
+
+            if (keyValues.length !== uniqueKeys.size) {
+                alert('不能将同一个按键同时绑定到多个方向！');
+                return;
+            }
+
+            // 检查是否所有键位都已设置
+            if (!newKeys.up || !newKeys.down || !newKeys.left || !newKeys.right) {
+                alert('请设置所有方向的键位！');
+                return;
+            }
+
+            // 保存新的键位设置
+            keys = newKeys;
+            localStorage.setItem('snakeKeys', JSON.stringify(keys));
+
+            // 保存墙体模式设置
+            wallMode = wallModeSelect.value;
+            localStorage.setItem('snakeWallMode', wallMode);
+
+            // 保存难度设置
+            difficulty = difficultySelect.value;
+            localStorage.setItem('snakeDifficulty', difficulty);
+
+            // 更新游戏速度（立即生效）
+            clearInterval(gameLoop);
+            gameLoop = setInterval(drawGame, DIFFICULTY_SPEED[difficulty]);
+
+            settingsPanel.classList.remove('show');
+        });
+
+        // 键位输入框监听键盘事件
+        [upKeyInput, downKeyInput, leftKeyInput, rightKeyInput].forEach(input => {
+            input.addEventListener('keydown', (event) => {
+                event.preventDefault(); // 防止默认行为
+                input.value = event.key.toUpperCase();
+            });
+        });
+
         document.addEventListener('keydown', changeDirection);
         restartBtn.addEventListener('click', restart);
 
-        // 初始化游戏
-        gameLoop = setInterval(drawGame, 150);
+        gameLoop = setInterval(drawGame, DIFFICULTY_SPEED[difficulty]);
     </script>
 </body>
 </html>
